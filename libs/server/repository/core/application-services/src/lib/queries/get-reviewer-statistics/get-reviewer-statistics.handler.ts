@@ -30,13 +30,17 @@ export class GetReviewerStatisticsHandler
     const repositories = await this.repositoryRepository.findByUserId(query.userId);
     const reviewer = await reviewerRepository.get(query.reviewerId, query.token);
 
-    const repositoryStatistics = await Promise.all(
+    let repositoryStatistics = await Promise.all(
       repositories.map(repository =>
         prRepository
           .findByRepositoryId(repository.fullName, query.token)
           .then(prs => prs.filter(pr => pr.reviewers.some(rev => rev.id === query.reviewerId)))
           .then(pr => repositoryPrsStatisticsReadModelFactory(repository, pr))
       )
+    );
+
+    repositoryStatistics = repositoryStatistics.filter(
+      repository => repository.prsStatistics.length > 0
     );
 
     return new ReviewerStatisticsReadModel(reviewer, repositoryStatistics);
